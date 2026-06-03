@@ -1,0 +1,6 @@
+2026-06-03 13:59:51.854883+03:00 jdbc[13]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Синтаксическая ошибка в выражении SQL "curl -X POST http://localhost:8080/api/clients \\\000d\000a  -H ""Content-Type: application/json"" [*]\\\000d\000a  -d ""{\\""name\\"":\\""Иван Петров\\"",\\""phone\\"":\\""+79001234567\\"",\\""defaultAddress\\"":\\""ул. Пушкина 10\\""}"""
+Syntax error in SQL statement "curl -X POST http://localhost:8080/api/clients \\\000d\000a  -H ""Content-Type: application/json"" [*]\\\000d\000a  -d ""{\\""name\\"":\\""Иван Петров\\"",\\""phone\\"":\\""+79001234567\\"",\\""defaultAddress\\"":\\""ул. Пушкина 10\\""}"""; SQL statement:
+curl -X POST http://localhost:8080/api/clients \
+  -H "Content-Type: application/json" \
+  -d "{\"name\":\"Иван Петров\",\"phone\":\"+79001234567\",\"defaultAddress\":\"ул. Пушкина 10\"}" [42000-224]
