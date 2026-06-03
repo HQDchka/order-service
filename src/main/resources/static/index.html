@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Доставка еды</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f0f0f0; }
+        .container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .panel { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; width: 600px; }
+        .panel h3 { margin-top: 0; }
+        input, select, button { margin: 5px; padding: 8px; width: calc(100% - 20px); }
+        button { background: #007bff; color: white; border: none; cursor: pointer; width: auto; }
+        button:hover { background: #0056b3; }
+        .result { background: #e9ecef; padding: 10px; border-radius: 5px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; margin-top: 10px; max-height: 300px; overflow-y: auto; }
+        .tab { overflow: hidden; border-bottom: 1px solid #ccc; margin-bottom: 15px; }
+        .tab button { background: #f1f1f1; float: left; border: none; outline: none; cursor: pointer; padding: 10px 20px; width: auto; margin: 0; }
+        .tab button:hover { background: #ddd; }
+        .tab button.active { background: #007bff; color: white; }
+        .tabcontent { display: none; }
+        .id-list { font-size: 11px; background: #e9ecef; padding: 5px; margin-top: 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Система доставки еды</h1>
+    
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'admin')" id="defaultOpen">Админ панель</button>
+        <button class="tablinks" onclick="openTab(event, 'client')">Клиентская панель</button>
+    </div>
+
+    <!-- АДМИН ПАНЕЛЬ -->
+    <div id="admin" class="tabcontent">
+        <div class="container">
+            <div class="panel">
+                <h3>Клиенты</h3>
+                <input type="text" id="clientName" placeholder="Имя">
+                <input type="text" id="clientPhone" placeholder="Телефон">
+                <input type="text" id="clientAddress" placeholder="Адрес">
+                <button onclick="addClient()">Добавить клиента</button>
+                <button onclick="getAllClients()">Все клиенты</button>
+                <div class="result" id="clientResult"></div>
+            </div>
+            
+            <div class="panel">
+                <h3>Курьеры</h3>
+                <input type="text" id="courierName" placeholder="Имя">
+                <input type="text" id="courierPhone" placeholder="Телефон">
+                <select id="courierStatus">
+                    <option value="FREE">Свободен</option>
+                    <option value="BUSY">Занят</option>
+                    <option value="OFF_DUTY">Не на смене</option>
+                </select>
+                <button onclick="addCourier()">Добавить курьера</button>
+                <button onclick="getAllCouriers()">Все курьеры</button>
+                <button onclick="getFreeCouriers()">Свободные курьеры</button>
+                <div class="result" id="courierResult"></div>
+            </div>
+            
+            <div class="panel">
+                <h3>Рестораны</h3>
+                <input type="text" id="restName" placeholder="Название">
+                <input type="text" id="restAddress" placeholder="Адрес">
+                <input type="time" id="restOpen" value="09:00">
+                <input type="time" id="restClose" value="22:00">
+                <button onclick="addRestaurant()">Добавить ресторан</button>
+                <button onclick="getAllRestaurants()">Все рестораны</button>
+                <div class="result" id="restaurantResult"></div>
+            </div>
+            
+            <div class="panel">
+                <h3>Блюда</h3>
+                <input type="text" id="dishRestId" placeholder="ID ресторана">
+                <input type="text" id="dishName" placeholder="Название блюда">
+                <input type="number" id="dishPrice" placeholder="Цена">
+                <select id="dishAvailable">
+                    <option value="true">Доступно</option>
+                    <option value="false">Недоступно</option>
+                </select>
+                <button onclick="addDish()">Добавить блюдо</button>
+                <div class="result" id="dishResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- КЛИЕНТСКАЯ ПАНЕЛЬ -->
+    <div id="client" class="tabcontent">
+        <div class="container">
+            <div class="panel">
+                <h3>Оформить заказ</h3>
+                <input type="text" id="orderClientId" placeholder="Ваш ID">
+                <input type="text" id="orderRestId" placeholder="ID ресторана">
+                <input type="text" id="orderAddress" placeholder="Адрес доставки">
+                <input type="text" id="orderDishId" placeholder="ID блюда">
+                <input type="number" id="orderQuantity" placeholder="Количество" value="1">
+                <button onclick="createOrder()">Оформить заказ</button>
+                <button onclick="getMyOrders()">Мои заказы</button>
+                <div class="result" id="orderResult"></div>
+            </div>
+            
+            <div class="panel">
+                <h3>Просмотр</h3>
+                <button onclick="getAllOrders()">Все заказы</button>
+                <button onclick="getAllRestaurantsForClient()">Рестораны</button>
+                <div class="result" id="viewResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = "http://localhost:8080/api";
+        
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        document.getElementById("defaultOpen").click();
+        
+        async function request(url, method, body) {
+            try {
+                const options = {
+                    method: method,
+                    headers: { "Content-Type": "application/json" }
+                };
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                const res = await fetch(url, options);
+                if (!res.ok) {
+                    const text = await res.text();
+                    return "Ошибка " + res.status + ": " + text;
+                }
+                const data = await res.json();
+                return JSON.stringify(data, null, 2);
+            } catch(e) { 
+                return "Ошибка: " + e.message; 
+            }
+        }
+        
+        async function addClient() {
+            const data = {
+                name: document.getElementById("clientName").value,
+                phone: document.getElementById("clientPhone").value,
+                defaultAddress: document.getElementById("clientAddress").value
+            };
+            const res = await request(API + "/clients", "POST", data);
+            document.getElementById("clientResult").innerText = res;
+        }
+        
+        async function getAllClients() {
+            const res = await request(API + "/clients", "GET");
+            document.getElementById("clientResult").innerText = res;
+        }
+        
+        async function addCourier() {
+            const data = {
+                name: document.getElementById("courierName").value,
+                phone: document.getElementById("courierPhone").value,
+                status: document.getElementById("courierStatus").value
+            };
+            const res = await request(API + "/couriers", "POST", data);
+            document.getElementById("courierResult").innerText = res;
+        }
+        
+        async function getAllCouriers() {
+            const res = await request(API + "/couriers", "GET");
+            document.getElementById("courierResult").innerText = res;
+        }
+        
+        async function getFreeCouriers() {
+            const res = await request(API + "/couriers/free", "GET");
+            document.getElementById("courierResult").innerText = res;
+        }
+        
+        async function addRestaurant() {
+            const data = {
+                name: document.getElementById("restName").value,
+                address: document.getElementById("restAddress").value,
+                openingTime: document.getElementById("restOpen").value + ":00",
+                closingTime: document.getElementById("restClose").value + ":00"
+            };
+            const res = await request(API + "/restaurants", "POST", data);
+            document.getElementById("restaurantResult").innerText = res;
+        }
+        
+        async function getAllRestaurants() {
+            const res = await request(API + "/restaurants", "GET");
+            document.getElementById("restaurantResult").innerText = res;
+        }
+        
+        async function addDish() {
+            const restId = document.getElementById("dishRestId").value;
+            const data = {
+                name: document.getElementById("dishName").value,
+                price: parseFloat(document.getElementById("dishPrice").value),
+                isAvailable: document.getElementById("dishAvailable").value === "true"
+            };
+            const res = await request(API + "/restaurants/" + restId + "/dishes", "POST", data);
+            document.getElementById("dishResult").innerText = res;
+        }
+        
+        async function createOrder() {
+            const data = {
+                clientId: document.getElementById("orderClientId").value,
+                restaurantId: document.getElementById("orderRestId").value,
+                deliveryAddress: document.getElementById("orderAddress").value,
+                items: [{
+                    dishId: document.getElementById("orderDishId").value,
+                    quantity: parseInt(document.getElementById("orderQuantity").value)
+                }]
+            };
+            const res = await request(API + "/orders", "POST", data);
+            document.getElementById("orderResult").innerText = res;
+        }
+        
+        async function getAllOrders() {
+            const res = await request(API + "/orders", "GET");
+            document.getElementById("viewResult").innerText = res;
+        }
+        
+        async function getAllRestaurantsForClient() {
+            const res = await request(API + "/restaurants", "GET");
+            document.getElementById("viewResult").innerText = res;
+        }
+        
+        async function getMyOrders() {
+            const clientId = document.getElementById("orderClientId").value;
+            if(!clientId) { alert("Введите ID клиента"); return; }
+            const res = await request(API + "/orders/client/" + clientId, "GET");
+            document.getElementById("orderResult").innerText = res;
+        }
+    </script>
+</body>
+</html>

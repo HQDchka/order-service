@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,20 +14,21 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Client {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-
+    
     @Column(nullable = false)
     private String name;
-
+    
     @Column(nullable = false, unique = true)
     private String phone;
-
+    
     @Column(nullable = false)
     private String defaultAddress;
-
+    
     @OneToMany(mappedBy = "client", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Order> orders = new ArrayList<>();
 }

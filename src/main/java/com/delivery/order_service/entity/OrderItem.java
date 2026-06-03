@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "order_items")
@@ -11,19 +12,21 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderItem {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-
+    
     @Column(nullable = false)
     private Integer quantity;
-
+    
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
+    @JsonBackReference
     private Order order;
-
+    
     @ManyToOne
     @JoinColumn(name = "dish_id", nullable = false)
+    @JsonBackReference
     private Dish dish;
 }
